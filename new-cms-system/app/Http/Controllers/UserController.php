@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Role;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Session;
@@ -15,8 +16,9 @@ class UserController extends Controller
     }
     public function show($id){
         $user = User::findOrFail($id);
-        // $this->authorize("viewProfile",$user);
-        return view("admin.users.profile", compact("user"));
+        $this->authorize('view', $user);
+        $roles = Role::all();
+        return view("admin.users.profile", compact(["user","roles"]));
     }
 
     
@@ -80,6 +82,14 @@ class UserController extends Controller
     return redirect('/admin')->with('success', 'User profile updated successfully');
 }
 
+public function attach($userid){
+    $user = User::find($userid);
+    $user->roles()->attach(request('role'));
+    // $user->save();
+    return redirect(route('user.profile.show',$user->id))->with('success','');
+
+}
+
 public function destroy($id){
     $user = User::findOrFail($id);
     if(Auth::user()->userHasRoles('Admin') || Auth::user()->id===$id){
@@ -90,5 +100,13 @@ public function destroy($id){
         Session::flash('not-authorized-message','you are not authorized to delete user');
     }
     return redirect('/admin/users');
+}
+
+public function detach($userid){
+    $user = User::findOrFail($userid);
+
+    $user->roles()->detach(request('role'));
+    // $user->save();
+    return redirect(route('user.profile.show',$user->id))->with('success','');
 }
 }
